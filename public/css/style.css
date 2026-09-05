@@ -367,6 +367,31 @@ a:hover {
     border-radius: var(--radius);
 }
 
+/* 多图网格 */
+.detail-images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.detail-images-grid .detail-content-image {
+    margin: 0;
+}
+
+/* HR联系方式 */
+.detail-hr-contact {
+    margin: 16px 0;
+    padding: 12px 16px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius);
+    font-size: 15px;
+}
+
+.detail-hr-contact p {
+    margin: 0;
+}
+
 .detail-content-link a {
     display: inline-block;
     padding: 10px 20px;
@@ -586,6 +611,66 @@ a:hover {
     height: 0;
     opacity: 0;
     position: absolute;
+}
+
+/* 多图管理 */
+.image-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+    background: var(--bg-secondary);
+}
+
+.image-item-preview {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+}
+
+.image-item-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.image-item-controls {
+    flex: 1;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.image-item-controls .image-url-input {
+    flex: 1;
+    min-width: 150px;
+}
+
+.image-item-controls input[type="file"] {
+    width: 0;
+    height: 0;
+    opacity: 0;
+    position: absolute;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
 }
 
 .btn-small {

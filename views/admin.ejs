@@ -72,18 +72,27 @@
                     <textarea id="formText" placeholder="招聘详情文本"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>🖼️ 图片</label>
-                    <div class="image-upload-group">
-                        <input type="text" id="formImage" placeholder="输入图片URL或上传图片">
-                        <input type="file" id="imageFile" accept="image/*" style="display:none;">
-                        <button type="button" class="btn btn-small" onclick="document.getElementById('imageFile').click()">选择文件</button>
-                        <button type="button" class="btn btn-small" id="uploadBtn">上传</button>
-                    </div>
-                    <div id="imagePreview" style="margin-top:8px;"></div>
+                    <label>🖼️ 图片（支持多张）</label>
+                    <div id="imageList"></div>
+                    <button type="button" class="btn btn-small" id="addImageBtn" style="margin-top:8px;">+ 添加图片</button>
                 </div>
                 <div class="form-group">
                     <label>🔗 链接 URL</label>
                     <input type="text" id="formLink" placeholder="微信推送链接或其他链接">
+                </div>
+                <div class="form-group">
+                    <label>📞 HR联系方式</label>
+                    <input type="text" id="formHrContact" placeholder="手机号/微信/邮箱等">
+                </div>
+                <div class="form-group">
+                    <label>📩 投递联系图片</label>
+                    <div class="image-upload-group">
+                        <input type="text" id="formContactImage" placeholder="输入投递相关联系图片URL">
+                        <input type="file" id="contactImageFile" accept="image/*" style="display:none;">
+                        <button type="button" class="btn btn-small" onclick="document.getElementById('contactImageFile').click()">选择文件</button>
+                        <button type="button" class="btn btn-small" id="uploadContactImageBtn">上传</button>
+                    </div>
+                    <div id="contactImagePreview" style="margin-top:8px;"></div>
                 </div>
                 <div class="form-group">
                     <label>标签（逗号分隔）</label>

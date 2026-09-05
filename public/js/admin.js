@@ -1,12 +1,14 @@
 // 全局变量
 let currentPage = 1;
 let editingId = null;
+let imageList = []; // 图片URL数组
 
 // 页面加载时获取数据
 document.addEventListener('DOMContentLoaded', () => {
     loadJobs();
     setupEventListeners();
-    setupImageUpload();
+    setupContactImageUpload();
+    document.getElementById('addImageBtn').addEventListener('click', () => addImageField(''));
 });
 
 // 设置事件监听
@@ -17,6 +19,9 @@ function setupEventListeners() {
         document.getElementById('modalTitle').textContent = '新增招聘信息';
         document.getElementById('jobForm').reset();
         document.getElementById('jobId').value = '';
+        imageList = [];
+        renderImageFields();
+        document.getElementById('contactImagePreview').innerHTML = '';
         showModal();
     });
 
@@ -148,7 +153,94 @@ function getContentIndicators(job) {
     if (job.content_text) indicators.push('📝');
     if (job.content_image) indicators.push('🖼️');
     if (job.content_link) indicators.push('🔗');
+    if (job.hr_contact) indicators.push('📞');
+    if (job.contact_image) indicators.push('📩');
     return indicators.join(' ') || '-';
+}
+
+// 解析图片字段（兼容旧数据单URL和新JSON数组）
+function parseImages(contentImage) {
+    if (!contentImage) return [];
+    try {
+        const parsed = JSON.parse(contentImage);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (e) {}
+    // 旧数据：单个URL字符串
+    return [contentImage];
+}
+
+// 渲染图片字段列表
+function renderImageFields() {
+    const container = document.getElementById('imageList');
+    if (imageList.length === 0) {
+        container.innerHTML = '<p style="color:#999;font-size:13px;">暂无图片</p>';
+        return;
+    }
+    container.innerHTML = imageList.map((url, index) => `
+        <div class="image-item" data-index="${index}">
+            <div class="image-item-preview">
+                ${url ? `<img src="${escapeHtml(url)}" onerror="this.style.display='none'">` : '<span style="color:#999;">无预览</span>'}
+            </div>
+            <div class="image-item-controls">
+                <input type="text" class="image-url-input" value="${escapeHtml(url || '')}" placeholder="输入图片URL" onchange="updateImageUrl(${index}, this.value)">
+                <input type="file" class="image-file-input" accept="image/*" style="display:none;" onchange="uploadImageForIndex(${index}, this)">
+                <button type="button" class="btn btn-small" onclick="this.previousElementSibling.click()">选择</button>
+                <button type="button" class="btn btn-small" onclick="triggerUpload(${index})">上传</button>
+                <button type="button" class="btn btn-small btn-danger" onclick="removeImageField(${index})">删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 添加图片字段
+function addImageField(url) {
+    imageList.push(url || '');
+    renderImageFields();
+}
+
+// 删除图片字段
+function removeImageField(index) {
+    imageList.splice(index, 1);
+    renderImageFields();
+}
+
+// 更新图片URL
+function updateImageUrl(index, url) {
+    imageList[index] = url;
+    // 更新预览
+    const item = document.querySelector(`.image-item[data-index="${index}"] .image-item-preview`);
+    if (item) {
+        item.innerHTML = url ? `<img src="${escapeHtml(url)}" onerror="this.style.display='none'">` : '<span style="color:#999;">无预览</span>';
+    }
+}
+
+// 触发指定图片的上传
+function triggerUpload(index) {
+    const fileInput = document.querySelectorAll('.image-file-input')[index];
+    if (fileInput) fileInput.click();
+}
+
+// 上传指定索引的图片
+async function uploadImageForIndex(index, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+        const res = await fetch('/api/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.success) {
+            imageList[index] = data.url;
+            renderImageFields();
+            alert('上传成功！');
+        } else {
+            alert(data.message || '上传失败');
+        }
+    } catch (err) {
+        alert('上传失败：' + err.message);
+    }
 }
 
 // 编辑招聘信息
@@ -166,9 +258,19 @@ async function editJob(id) {
             document.getElementById('formCompany').value = job.company || '';
             document.getElementById('formSummary').value = job.summary || '';
             document.getElementById('formText').value = job.content_text || '';
-            document.getElementById('formImage').value = job.content_image || '';
             document.getElementById('formLink').value = job.content_link || '';
             document.getElementById('formTags').value = job.tags || '';
+            document.getElementById('formHrContact').value = job.hr_contact || '';
+            document.getElementById('formContactImage').value = job.contact_image || '';
+
+            // 解析多图
+            imageList = parseImages(job.content_image);
+            renderImageFields();
+
+            // 投递联系图片预览
+            const contactPreview = document.getElementById('contactImagePreview');
+            contactPreview.innerHTML = job.contact_image ? `<img src="${escapeHtml(job.contact_image)}" style="max-width:200px;max-height:150px;border-radius:4px;" onerror="this.style.display='none'">` : '';
+
             showModal();
         }
     } catch (err) {
@@ -178,14 +280,24 @@ async function editJob(id) {
 
 // 保存招聘信息
 async function saveJob() {
+    // 同步图片列表中输入框的最新值
+    document.querySelectorAll('.image-url-input').forEach((input, i) => {
+        imageList[i] = input.value;
+    });
+
+    // 过滤空值
+    const images = imageList.filter(url => url && url.trim());
+
     const jobData = {
         title: document.getElementById('formTitle').value,
         company: document.getElementById('formCompany').value,
         summary: document.getElementById('formSummary').value,
         content_text: document.getElementById('formText').value || null,
-        content_image: document.getElementById('formImage').value || null,
+        content_image: images.length > 0 ? JSON.stringify(images) : null,
         content_link: document.getElementById('formLink').value || null,
-        tags: document.getElementById('formTags').value || null
+        tags: document.getElementById('formTags').value || null,
+        hr_contact: document.getElementById('formHrContact').value || null,
+        contact_image: document.getElementById('formContactImage').value || null
     };
 
     try {
@@ -255,77 +367,64 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// 设置图片上传
-function setupImageUpload() {
-    const fileInput = document.getElementById('imageFile');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const imageInput = document.getElementById('formImage');
+// 设置投递联系图片上传
+function setupContactImageUpload() {
+    const fileInput = document.getElementById('contactImageFile');
+    const uploadBtn = document.getElementById('uploadContactImageBtn');
+    const contactImageInput = document.getElementById('formContactImage');
 
-    // 文件选择变化时显示预览
     fileInput.addEventListener('change', () => {
         const file = fileInput.files[0];
         if (file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                document.getElementById('imagePreview').innerHTML =
+                document.getElementById('contactImagePreview').innerHTML =
                     `<img src="${e.target.result}" style="max-width:200px;max-height:150px;border-radius:4px;">`;
             };
             reader.readAsDataURL(file);
         }
     });
 
-    // 上传按钮
-    uploadBtn.addEventListener('click', uploadImage);
+    uploadBtn.addEventListener('click', async () => {
+        const file = fileInput.files[0];
+        if (!file) {
+            alert('请先选择文件');
+            return;
+        }
 
-    // URL 输入变化时显示预览
-    imageInput.addEventListener('input', () => {
-        const url = imageInput.value;
-        if (url) {
-            document.getElementById('imagePreview').innerHTML =
-                `<img src="${url}" style="max-width:200px;max-height:150px;border-radius:4px;" onerror="this.style.display='none'">`;
-        } else {
-            document.getElementById('imagePreview').innerHTML = '';
+        const formData = new FormData();
+        formData.append('image', file);
+
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '上传中...';
+
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                contactImageInput.value = data.url;
+                document.getElementById('contactImagePreview').innerHTML =
+                    `<img src="${data.url}" style="max-width:200px;max-height:150px;border-radius:4px;">`;
+                fileInput.value = '';
+                alert('上传成功！');
+            } else {
+                alert(data.message || '上传失败');
+            }
+        } catch (err) {
+            alert('上传失败：' + err.message);
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '上传';
         }
     });
-}
 
-// 上传图片
-async function uploadImage() {
-    const fileInput = document.getElementById('imageFile');
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert('请先选择文件');
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('image', file);
-
-    const uploadBtn = document.getElementById('uploadBtn');
-    uploadBtn.disabled = true;
-    uploadBtn.textContent = '上传中...';
-
-    try {
-        const res = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            document.getElementById('formImage').value = data.url;
-            document.getElementById('imagePreview').innerHTML =
-                `<img src="${data.url}" style="max-width:200px;max-height:150px;border-radius:4px;">`;
-            fileInput.value = '';
-            alert('上传成功！');
+    contactImageInput.addEventListener('input', () => {
+        const url = contactImageInput.value;
+        if (url) {
+            document.getElementById('contactImagePreview').innerHTML =
+                `<img src="${url}" style="max-width:200px;max-height:150px;border-radius:4px;" onerror="this.style.display='none'">`;
         } else {
-            alert(data.message || '上传失败');
+            document.getElementById('contactImagePreview').innerHTML = '';
         }
-    } catch (err) {
-        alert('上传失败：' + err.message);
-    } finally {
-        uploadBtn.disabled = false;
-        uploadBtn.textContent = '上传';
-    }
+    });
 }

@@ -130,7 +130,7 @@ router.get('/jobs/:id', async (req, res) => {
 
 // 新增招聘信息（管理员）
 router.post('/jobs', requireAdmin, async (req, res) => {
-    const { title, company, summary, content_text, content_image, content_link, tags } = req.body;
+    const { title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image } = req.body;
 
     if (!title) {
         return res.json({ success: false, message: '标题为必填项' });
@@ -138,9 +138,9 @@ router.post('/jobs', requireAdmin, async (req, res) => {
 
     try {
         const [result] = await pool.execute(
-            `INSERT INTO jobs (title, company, summary, content_text, content_image, content_link, tags, original_time)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [title, company || '', summary || '', content_text || null, content_image || null, content_link || null, tags || null]
+            `INSERT INTO jobs (title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, original_time)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [title, company || '', summary || '', content_text || null, content_image || null, content_link || null, tags || null, hr_contact || null, contact_image || null]
         );
 
         await exportJobsData();
@@ -153,14 +153,14 @@ router.post('/jobs', requireAdmin, async (req, res) => {
 
 // 编辑招聘信息（管理员）
 router.put('/jobs/:id', requireAdmin, async (req, res) => {
-    const { title, company, summary, content_text, content_image, content_link, tags } = req.body;
+    const { title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image } = req.body;
 
     try {
         const [result] = await pool.execute(
             `UPDATE jobs SET title = ?, company = ?, summary = ?,
-             content_text = ?, content_image = ?, content_link = ?, tags = ?
+             content_text = ?, content_image = ?, content_link = ?, tags = ?, hr_contact = ?, contact_image = ?
              WHERE id = ?`,
-            [title, company, summary, content_text, content_image, content_link, tags, req.params.id]
+            [title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, req.params.id]
         );
 
         if (result.affectedRows === 0) {

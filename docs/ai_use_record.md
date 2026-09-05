@@ -5,6 +5,80 @@
 
 ---
 
+## 2026-09-05 第十八次对话
+
+**时间：** 2026-09-05
+
+**用户输入：**
+> 我想要给同一个招聘信息里面能放多张图片
+> 加一个hr联系方式字段，并准备一个投递相关联系图片链接
+
+**AI 执行动作：**
+1. 需求分析：
+   - 原 `content_image` 为 VARCHAR(500)，仅支持单张图片 URL
+   - 需改为支持多图（JSON 数组格式）
+   - 新增 HR 联系方式字段 `hr_contact`
+   - 新增投递联系图片字段 `contact_image`
+2. 修改 `docs/database_init.sql`：
+   - `content_image` 从 VARCHAR(500) 改为 TEXT
+   - 新增 `hr_contact VARCHAR(500)` 字段
+   - 新增 `contact_image VARCHAR(500)` 字段
+3. 修改 `server/routes/api.js`：
+   - POST/PUT 接口增加 `hr_contact`、`contact_image` 字段处理
+4. 重写 `views/admin.ejs`：
+   - 单图输入 → 多图动态表单（添加/删除/独立上传）
+   - 新增 HR 联系方式输入框
+   - 新增投递联系图片上传区域（带预览）
+5. 重写 `public/js/admin.js`：
+   - 图片数组管理：`addImageField()`、`removeImageField()`、`updateImageUrl()`
+   - `parseImages()` 函数兼容旧数据单 URL 和新 JSON 数组
+   - 每张图独立上传功能
+   - 投递联系图片独立上传和预览
+   - `saveJob()` 将图片数组序列化为 JSON 字符串
+   - `editJob()` 解析 JSON 数组还原多图表单
+   - `getContentIndicators()` 增加📞📩标识
+6. 修改 `views/detail.ejs`：
+   - 解析 `content_image` JSON 数组，循环渲染多图
+   - 新增 HR 联系方式展示区
+   - 新增投递联系图片展示区
+7. 修改 `static/js/app.js`：
+   - 新增 `parseImageUrls()` 兼容解析函数
+   - 新增 `renderDetailImages()` 多图渲染函数
+   - 修复旧逻辑：移除 `content_image` 非图片URL当链接的处理
+   - 显示 HR 联系方式和投递联系图片
+   - `getContentIndicators()` 增加📞📩标识
+8. 修改 `public/js/app.js`：
+   - `getContentIndicators()` 增加📞📩标识
+9. 修改 `public/css/style.css`：
+   - 新增 `.detail-images-grid` 多图网格布局
+   - 新增 `.image-item` 管理后台图片项样式
+   - 新增 `.detail-hr-contact` HR联系方式样式
+   - 新增 `.btn-danger` 删除按钮样式
+
+**产出文件：**
+- `docs/database_init.sql`（更新：字段类型变更+新增字段）
+- `server/routes/api.js`（更新：新字段处理）
+- `views/admin.ejs`（更新：多图表单+新字段输入）
+- `public/js/admin.js`（重写：多图管理+新字段处理）
+- `views/detail.ejs`（更新：多图渲染+新字段展示）
+- `static/js/app.js`（更新：多图渲染+新字段展示+修复旧逻辑）
+- `public/js/app.js`（更新：内容标识）
+- `public/css/style.css`（更新：新样式）
+
+**数据格式变更：**
+- `content_image`：从单 URL 字符串 → JSON 数组格式，如 `["/uploads/a.jpg", "/uploads/b.jpg"]`
+- 向后兼容：`parseImages()` / `parseImageUrls()` 自动识别旧数据单 URL
+
+**待用户手动执行的数据库迁移：**
+```sql
+USE seu_job;
+ALTER TABLE jobs MODIFY content_image TEXT NULL COMMENT '图片URL（支持多图，JSON数组格式）';
+ALTER TABLE jobs ADD COLUMN hr_contact VARCHAR(500) NULL COMMENT 'HR联系方式' AFTER tags;
+ALTER TABLE jobs ADD COLUMN contact_image VARCHAR(500) NULL COMMENT '投递相关联系图片链接' AFTER hr_contact;
+```
+
+---
+
 ## 2026-09-04 21:30 第十七次对话
 
 **时间：** 2026-09-04 21:30

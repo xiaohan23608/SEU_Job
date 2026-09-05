@@ -45,8 +45,13 @@
                 <% } %>
 
                 <% if (job.content_image) { %>
-                    <div class="detail-content-image">
-                        <img src="<%= job.content_image %>" alt="招聘图片">
+                    <div class="detail-images-grid">
+                        <% const images = (() => { try { const p = JSON.parse(job.content_image); return Array.isArray(p) ? p : [job.content_image]; } catch(e) { return [job.content_image]; } })(); %>
+                        <% images.forEach(function(img) { if (img) { %>
+                            <div class="detail-content-image">
+                                <img src="<%= img %>" alt="招聘图片">
+                            </div>
+                        <% } }); %>
                     </div>
                 <% } %>
 
@@ -54,6 +59,18 @@
                     <div class="detail-content-link">
                         <p>推送链接：</p>
                         <a href="<%= job.content_link %>" target="_blank">点击查看</a>
+                    </div>
+                <% } %>
+
+                <% if (job.hr_contact) { %>
+                    <div class="detail-hr-contact">
+                        <p>📞 HR联系方式：<%= job.hr_contact %></p>
+                    </div>
+                <% } %>
+
+                <% if (job.contact_image) { %>
+                    <div class="detail-content-image">
+                        <img src="<%= job.contact_image %>" alt="投递联系图片">
                     </div>
                 <% } %>
             </div>

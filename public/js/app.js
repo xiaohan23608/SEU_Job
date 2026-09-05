@@ -130,6 +130,8 @@ function getContentIndicators(job) {
     if (job.content_text) indicators.push('📝');
     if (job.content_image) indicators.push('🖼️');
     if (job.content_link) indicators.push('🔗');
+    if (job.hr_contact) indicators.push('📞');
+    if (job.contact_image) indicators.push('📩');
     return indicators.join(' ');
 }
 

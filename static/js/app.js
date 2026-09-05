@@ -138,8 +138,10 @@ function showDetail(id) {
         </div>
         <div class="detail-content">
             ${job.content_text ? `<div class="detail-content-text" id="contentText">${escapeHtml(job.content_text)}</div>` : ''}
-            ${isImageUrl(job.content_image) ? `<div class="detail-content-image"><img src="${escapeHtml(fixImagePath(job.content_image))}" alt="招聘图片"></div>` : ''}
-            ${job.content_link || (job.content_image && !isImageUrl(job.content_image)) ? `<div class="detail-content-link"><p>推送链接：</p><a href="${escapeHtml(job.content_link || job.content_image)}" target="_blank" rel="noopener noreferrer">点击查看</a></div>` : ''}
+            ${renderDetailImages(job.content_image)}
+            ${job.content_link ? `<div class="detail-content-link"><p>推送链接：</p><a href="${escapeHtml(job.content_link)}" target="_blank" rel="noopener noreferrer">点击查看</a></div>` : ''}
+            ${job.hr_contact ? `<div class="detail-hr-contact"><p>📞 HR联系方式：${escapeHtml(job.hr_contact)}</p></div>` : ''}
+            ${job.contact_image ? `<div class="detail-content-image"><img src="${escapeHtml(fixImagePath(job.contact_image))}" alt="投递联系图片"></div>` : ''}
         </div>
         ${job.tags ? `<div class="detail-tags">${job.tags.split(',').map(tag => `<span class="tag">${escapeHtml(tag.trim())}</span>`).join('')}</div>` : ''}
     `;
@@ -160,6 +162,8 @@ function getContentIndicators(job) {
     if (job.content_text) indicators.push('📝');
     if (job.content_image) indicators.push('🖼️');
     if (job.content_link) indicators.push('🔗');
+    if (job.hr_contact) indicators.push('📞');
+    if (job.contact_image) indicators.push('📩');
     return indicators.join(' ');
 }
 
@@ -189,6 +193,28 @@ function isImageUrl(url) {
     if (!url) return false;
     if (url.startsWith('data:image/')) return true;
     return /\.(avif|gif|jpe?g|png|webp)(?:[?#].*)?$/i.test(url);
+}
+
+// 解析多图字段（兼容旧数据单URL和新JSON数组）
+function parseImageUrls(contentImage) {
+    if (!contentImage) return [];
+    try {
+        const parsed = JSON.parse(contentImage);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch (e) {}
+    return [contentImage];
+}
+
+// 渲染详情页多图
+function renderDetailImages(contentImage) {
+    const images = parseImageUrls(contentImage).filter(url => isImageUrl(url));
+    if (images.length === 0) return '';
+    if (images.length === 1) {
+        return `<div class="detail-content-image"><img src="${escapeHtml(fixImagePath(images[0]))}" alt="招聘图片"></div>`;
+    }
+    return `<div class="detail-images-grid">${images.map(url =>
+        `<div class="detail-content-image"><img src="${escapeHtml(fixImagePath(url))}" alt="招聘图片"></div>`
+    ).join('')}</div>`;
 }
 
 // HTML 转义
