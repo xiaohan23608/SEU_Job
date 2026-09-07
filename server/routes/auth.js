@@ -3,20 +3,6 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const { pool } = require('../db');
 
-// 访客登录
-router.post('/login', async (req, res) => {
-    const { password } = req.body;
-    const guestPassword = process.env.GUEST_PASSWORD || 'seucsjob';
-
-    if (password === guestPassword) {
-        req.session.isLoggedIn = true;
-        req.session.isAdmin = false;
-        return res.json({ success: true, message: '登录成功' });
-    }
-
-    return res.json({ success: false, message: '密码错误' });
-});
-
 // 管理员登录
 router.post('/admin/login', async (req, res) => {
     const { username, password } = req.body;

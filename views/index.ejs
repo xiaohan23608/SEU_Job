@@ -13,8 +13,10 @@
             <div class="navbar-actions">
                 <% if (isAdmin) { %>
                     <a href="/admin" class="btn btn-sm btn-primary">管理后台</a>
+                    <button id="logoutBtn" class="btn btn-sm">退出</button>
+                <% } else { %>
+                    <a href="/login" class="btn btn-sm">管理登录</a>
                 <% } %>
-                <button id="logoutBtn" class="btn btn-sm">退出</button>
             </div>
         </div>
     </nav>

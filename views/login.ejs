@@ -10,16 +10,56 @@
     <div class="login-container">
         <div class="login-header">
             <h1>东南大学招聘信息</h1>
-            <p>请输入访问密码</p>
+            <p>管理员登录</p>
         </div>
         <form id="loginForm" class="login-form">
             <div class="form-group">
-                <input type="password" id="password" name="password" placeholder="请输入密码" required autofocus>
+                <input type="text" id="username" name="username" placeholder="管理员账号" required autofocus>
             </div>
-            <button type="submit" class="btn btn-primary">进 入</button>
+            <div class="form-group">
+                <input type="password" id="password" name="password" placeholder="密码" required>
+            </div>
+            <button type="submit" class="btn btn-primary">登 录</button>
             <div id="errorMsg" class="error-msg" style="display: none;"></div>
+            <div style="margin-top: 16px; text-align: center;">
+                <a href="/" style="color: var(--text-secondary); text-decoration: none;">← 返回首页</a>
+            </div>
         </form>
     </div>
-    <script src="/js/login.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            errorMsg.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = '登录中...';
+
+            try {
+                const res = await fetch('/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = '/admin';
+                } else {
+                    errorMsg.textContent = data.message || '登录失败';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = '网络错误，请重试';
+                errorMsg.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '登 录';
+            }
+        });
+    </script>
 </body>
 </html>

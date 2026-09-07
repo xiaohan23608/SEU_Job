@@ -26,18 +26,21 @@ function setupEventListeners() {
         }
     });
 
-    // 登出按钮
-    document.getElementById('logoutBtn').addEventListener('click', async () => {
-        try {
-            const res = await fetch('/logout', { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                window.location.href = '/login';
+    // 登出按钮（仅管理员可见）
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/logout', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/login';
+                }
+            } catch (err) {
+                console.error('登出失败:', err);
             }
-        } catch (err) {
-            console.error('登出失败:', err);
-        }
-    });
+        });
+    }
 }
 
 // 加载招聘信息

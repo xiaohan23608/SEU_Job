@@ -1,22 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { requireGuest, requireAdmin } = require('../middleware/auth');
+const { requireAdmin } = require('../middleware/auth');
 
-// 登录页
+// 管理员登录页
 router.get('/login', (req, res) => {
-    if (req.session && req.session.isLoggedIn) {
-        return res.redirect('/');
+    if (req.session && req.session.isAdmin) {
+        return res.redirect('/admin');
     }
     res.render('login', { error: null });
 });
 
-// 主页（需要登录）
-router.get('/', requireGuest, (req, res) => {
+// 主页（公开访问）
+router.get('/', (req, res) => {
     res.render('index', { isAdmin: req.session.isAdmin || false });
 });
 
-// 详情页（需要登录）
-router.get('/job/:id', requireGuest, async (req, res) => {
+// 详情页（公开访问）
+router.get('/job/:id', async (req, res) => {
     const { pool } = require('../db');
     try {
         const [rows] = await pool.execute('SELECT * FROM jobs WHERE id = ?', [req.params.id]);
@@ -31,7 +31,7 @@ router.get('/job/:id', requireGuest, async (req, res) => {
 });
 
 // 管理页（需要管理员权限）
-router.get('/admin', requireGuest, (req, res) => {
+router.get('/admin', (req, res) => {
     if (!req.session.isAdmin) {
         return res.render('admin-login', { error: null });
     }

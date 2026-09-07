@@ -13,8 +13,10 @@
             <div class="navbar-actions">
                 <% if (isAdmin) { %>
                     <a href="/admin" class="btn btn-sm btn-primary">管理后台</a>
+                    <button id="logoutBtn" class="btn btn-sm">退出</button>
+                <% } else { %>
+                    <a href="/login" class="btn btn-sm">管理登录</a>
                 <% } %>
-                <button id="logoutBtn" class="btn btn-sm">退出</button>
             </div>
         </div>
     </nav>
@@ -86,17 +88,20 @@
     </div>
 
     <script>
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            try {
-                const res = await fetch('/logout', { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    window.location.href = '/login';
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+                try {
+                    const res = await fetch('/logout', { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        window.location.href = '/login';
+                    }
+                } catch (err) {
+                    console.error('登出失败:', err);
                 }
-            } catch (err) {
-                console.error('登出失败:', err);
-            }
-        });
+            });
+        }
 
         // 将文本中的URL转换为可点击链接
         const contentText = document.getElementById('contentText');
