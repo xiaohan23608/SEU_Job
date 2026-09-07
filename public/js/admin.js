@@ -38,9 +38,6 @@ function setupEventListeners() {
     // 关闭模态框
     document.getElementById('modalClose').addEventListener('click', hideModal);
     document.getElementById('cancelBtn').addEventListener('click', hideModal);
-    document.getElementById('modalOverlay').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) hideModal();
-    });
 
     // 表单提交
     document.getElementById('jobForm').addEventListener('submit', async (e) => {
