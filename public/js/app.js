@@ -77,14 +77,16 @@ function renderCards(jobs) {
 
     grid.innerHTML = jobs.map(job => `
         <div class="card" onclick="window.location.href='/job/${job.id}'">
-            <div class="card-header">
-                <span class="card-indicators">${getContentIndicators(job)}</span>
+            <div class="card-body">
+                <div class="card-header">
+                    <span class="card-indicators">${getContentIndicators(job)}</span>
+                </div>
+                <div class="card-title">${escapeHtml(job.title)}</div>
+                ${job.company ? `<div class="card-company">${escapeHtml(job.company)}</div>` : ''}
+                <div class="card-summary">${escapeHtml(job.summary || '')}</div>
             </div>
-            <div class="card-title">${escapeHtml(job.title)}</div>
-            ${job.company ? `<div class="card-company">${escapeHtml(job.company)}</div>` : ''}
-            <div class="card-summary">${escapeHtml(job.summary || '')}</div>
             <div class="card-footer">
-                <span>${job.original_time ? new Date(job.original_time).toLocaleDateString('zh-CN') : ''}</span>
+                <span>📅 ${job.original_time ? new Date(job.original_time).toLocaleDateString('zh-CN') : ''}</span>
             </div>
         </div>
     `).join('');

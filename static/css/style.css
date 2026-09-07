@@ -1,14 +1,24 @@
 /* ==================== 全局变量 ==================== */
 :root {
-    --primary-color: #1976d2;
-    --primary-hover: #1565c0;
-    --bg-color: #f5f5f5;
+    --primary-color: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-light: #eef2ff;
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --text-color: #1e293b;
+    --text-secondary: #64748b;
+    --text-light: #94a3b8;
+    --bg-color: #f8fafc;
+    --bg-secondary: #f1f5f9;
     --card-bg: #ffffff;
-    --text-color: #333333;
-    --text-light: #666666;
-    --border-color: #e0e0e0;
-    --shadow: 0 2px 8px rgba(0,0,0,0.1);
-    --radius: 8px;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ==================== 全局样式 ==================== */
@@ -18,95 +28,141 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
-    line-height: 1.6;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
 }
 
 a {
     color: var(--primary-color);
     text-decoration: none;
+    transition: var(--transition);
 }
 
 a:hover {
-    text-decoration: underline;
+    color: var(--primary-hover);
+}
+
+::selection {
+    background-color: var(--primary-color);
+    color: #fff;
 }
 
 /* ==================== 导航栏 ==================== */
 .navbar {
-    background-color: var(--card-bg);
-    box-shadow: var(--shadow);
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.6);
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
 .navbar-content {
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 0 20px;
-    height: 60px;
+    padding: 0 24px;
+    height: 64px;
     display: flex;
     align-items: center;
 }
 
 .navbar-brand {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 18px;
+    font-weight: 700;
     color: var(--text-color);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.navbar-brand::before {
+    content: '🎓';
+    font-size: 22px;
 }
 
 .navbar-brand:hover {
-    text-decoration: none;
     color: var(--primary-color);
+    text-decoration: none;
 }
 
 /* ==================== 容器 ==================== */
 .container {
-    max-width: 1200px;
+    max-width: 1280px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px;
 }
 
 /* ==================== 搜索栏 ==================== */
 .search-bar {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 28px;
 }
 
 .search-bar input {
     flex: 1;
-    padding: 10px 15px;
-    border: 1px solid var(--border-color);
+    padding: 12px 18px;
+    border: 2px solid var(--border-color);
     border-radius: var(--radius);
-    font-size: 14px;
+    font-size: 15px;
+    background: var(--card-bg);
+    transition: var(--transition);
+    color: var(--text-color);
+}
+
+.search-bar input::placeholder {
+    color: var(--text-light);
 }
 
 .search-bar input:focus {
     outline: none;
     border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 /* ==================== 按钮 ==================== */
 .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     padding: 8px 16px;
     border: none;
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.2s;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.btn:active {
+    transform: scale(0.97);
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: var(--primary-gradient);
     color: #fff;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+    transform: translateY(-1px);
+}
+
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 13px;
 }
 
 /* ==================== 卡片网格 ==================== */
@@ -119,27 +175,64 @@ a:hover {
 /* ==================== 卡片样式 ==================== */
 .card {
     background: var(--card-bg);
-    border-radius: var(--radius);
+    border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition);
     overflow: hidden;
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-gradient);
+    opacity: 0;
+    transition: var(--transition);
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(79, 70, 229, 0.15);
+}
+
+.card:hover::before {
+    opacity: 1;
 }
 
 .card-body {
-    padding: 20px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.card-indicators {
+    font-size: 16px;
+    letter-spacing: 3px;
 }
 
 .card-title {
     font-size: 16px;
     font-weight: 600;
+    color: var(--text-color);
     margin-bottom: 8px;
-    line-height: 1.4;
+    line-height: 1.5;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -147,19 +240,35 @@ a:hover {
 }
 
 .card-company {
-    font-size: 14px;
-    color: var(--text-light);
-    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-company::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    opacity: 0.6;
 }
 
 .card-summary {
     font-size: 13px;
-    color: var(--text-light);
+    color: var(--text-secondary);
     margin-bottom: 12px;
+    flex: 1;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+    line-height: 1.7;
 }
 
 .card-footer {
@@ -168,106 +277,124 @@ a:hover {
     align-items: center;
     font-size: 12px;
     color: var(--text-light);
-}
-
-.card-indicators {
-    font-size: 14px;
+    border-top: 1px solid var(--border-color);
+    padding: 12px 24px;
 }
 
 /* ==================== 分页 ==================== */
 .pagination {
     display: flex;
     justify-content: center;
-    gap: 5px;
-    margin-top: 30px;
+    gap: 6px;
+    margin-top: 32px;
     padding: 20px 0;
 }
 
 .pagination button {
-    padding: 6px 12px;
-    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border: 1.5px solid var(--border-color);
     background: var(--card-bg);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: var(--transition);
 }
 
 .pagination button:hover:not(:disabled) {
     background-color: var(--primary-color);
     color: #fff;
     border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
 }
 
 .pagination button.active {
-    background-color: var(--primary-color);
+    background: var(--primary-gradient);
     color: #fff;
-    border-color: var(--primary-color);
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
 }
 
 .pagination button:disabled {
-    opacity: 0.5;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 /* ==================== 详情页 ==================== */
 .detail-container {
-    max-width: 800px;
+    max-width: 860px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 24px;
 }
 
 .detail-header {
     display: flex;
     align-items: center;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 .btn-back {
-    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
     background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all 0.2s;
-    color: var(--text-color);
+    transition: var(--transition);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .btn-back:hover {
-    background-color: var(--bg-color);
+    background-color: var(--bg-secondary);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
     text-decoration: none;
 }
 
 .detail-card {
     background: var(--card-bg);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 30px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 36px;
+    border: 1px solid rgba(226, 232, 240, 0.5);
 }
 
 .detail-card h1 {
-    font-size: 24px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-color);
     margin-bottom: 20px;
+    line-height: 1.4;
 }
 
 .detail-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: 16px;
+    margin-bottom: 24px;
     font-size: 14px;
-    color: var(--text-light);
+    color: var(--text-secondary);
 }
 
 .detail-meta span {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    font-size: 13px;
 }
 
 .detail-content {
-    margin: 20px 0;
-    padding: 20px 0;
+    margin: 24px 0;
+    padding: 24px 0;
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
 }
@@ -275,43 +402,39 @@ a:hover {
 .detail-content-text {
     white-space: pre-wrap;
     word-break: break-word;
-    line-height: 1.8;
+    line-height: 1.9;
+    font-size: 15px;
 }
 
 .detail-content-text a {
     color: var(--primary-color);
     text-decoration: underline;
-    word-break: break-all;
-}
-
-.detail-content-text a:hover {
-    color: var(--primary-hover);
-}
-
-.detail-content-image {
-    margin: 15px 0;
+    text-underline-offset: 2px;
 }
 
 .detail-content-image img {
     max-width: 100%;
     border-radius: var(--radius);
-}
-
-.detail-content-link {
-    margin-top: 15px;
+    box-shadow: var(--shadow);
 }
 
 .detail-content-link a {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: var(--primary-color);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 24px;
+    background: var(--primary-gradient);
     color: #fff;
-    border-radius: var(--radius);
+    border-radius: var(--radius-sm);
     margin-top: 10px;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    transition: var(--transition);
 }
 
 .detail-content-link a:hover {
-    background-color: var(--primary-hover);
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+    transform: translateY(-1px);
     text-decoration: none;
 }
 
@@ -319,26 +442,36 @@ a:hover {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 20px;
+    margin-top: 24px;
 }
 
 .tag {
-    padding: 4px 12px;
-    background-color: var(--bg-color);
+    padding: 5px 14px;
+    background: var(--bg-secondary);
     border-radius: 20px;
     font-size: 12px;
-    color: var(--text-light);
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.tag:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: var(--primary-light);
 }
 
 /* ==================== 空状态 ==================== */
 .empty-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 80px 20px;
     color: var(--text-light);
 }
 
 .empty-state p {
     font-size: 18px;
+    color: var(--text-secondary);
 }
 
 /* ==================== 响应式 ==================== */
@@ -352,7 +485,7 @@ a:hover {
     }
 
     .detail-card {
-        padding: 20px;
+        padding: 24px;
     }
 }
 
