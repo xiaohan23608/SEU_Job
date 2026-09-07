@@ -5,6 +5,62 @@
 
 ---
 
+## 2026-09-07 第二十次对话
+
+**时间：** 2026-09-07
+
+**用户输入：**
+> 我现在不能连续进行招聘信息的上架和下架操作
+> 还是无权限
+
+**AI 执行动作：**
+1. 问题调查：
+   - 读取 `server/routes/api.js`、`public/js/admin.js`、`server/middleware/auth.js`
+   - 分析上架/下架切换流程：前端 `toggleJob()` → `PATCH /api/jobs/:id/toggle` → `requireAdmin` 中间件 → 数据库更新 → `exportJobsData()` 导出
+   - 发现三个潜在问题：
+     - 前端按钮未禁用，快速点击会发送多个并发请求
+     - 后端 SELECT + UPDATE 非原子操作，存在竞态条件
+     - `exportJobsData()` 中 `fs.cpSync` 同步递归复制 uploads 目录，阻塞响应
+
+2. 第一轮修复（未解决根本问题）：
+   - 修改 `public/js/admin.js`：`toggleJob()` 增加按钮禁用/加载态，传入 `this` 引用
+   - 修改 `server/routes/api.js`：toggle 改为原子操作 `UPDATE SET is_active = NOT is_active`，`exportJobsData()` 改为异步不阻塞响应
+   - 修改 `views/admin.ejs`：toggle 按钮 onclick 传入 `this`
+
+3. 用户反馈"还是无权限"，添加调试日志定位问题：
+   - `server/middleware/auth.js`：requireAdmin 打印 sessionID 和 session 内容
+   - `server/routes/api.js`：toggle 打印 sessionID
+   - `server/routes/auth.js`：login 打印 sessionID
+
+4. **根本原因确认**：服务器日志显示：
+   - 第一次 toggle 成功 → `exportJobsData()` 写入 `data/`、`static/` 文件
+   - **nodemon 检测到文件变化，自动重启服务器**
+   - 服务器重启 → 内存 session 丢失 → `isAdmin: undefined`
+   - 第二次请求 → `requireAdmin` 返回 403 "无权限"
+
+5. 根本修复：
+   - 创建 `nodemon.json`：配置忽略 `data/*`、`static/*`、`public/uploads/*`、`sessions/*` 目录
+   - 删除调试日志，恢复 `auth.js`、`api.js`、`pages.js` 为正常代码
+
+6. 数据库字段缺失修复：
+   - 服务器日志还显示 `Unknown column 'hr_contact' in 'field list'`
+   - 执行 `ALTER TABLE jobs ADD COLUMN hr_contact VARCHAR(200), ADD COLUMN contact_image TEXT`
+
+**产出文件：**
+- `nodemon.json`（新增：忽略导出目录，防止 nodemon 误重启）
+- `server/routes/api.js`（更新：原子 toggle + 异步导出）
+- `public/js/admin.js`（更新：按钮禁用/加载态）
+- `views/admin.ejs`（更新：toggle 按钮传入 this）
+
+**问题根因：**
+`exportJobsData()` 在每次 toggle 后写入 `data/` 和 `static/` 目录的文件，nodemon 默认监听所有文件变化并重启服务器，导致内存中的 session 丢失。
+
+**经验总结：**
+- 使用 nodemon 开发时，对于会自动写入文件的功能（如数据导出），必须在 `nodemon.json` 中排除相关目录
+- 生产环境应使用数据库或 Redis 存储 session，而非默认的内存 MemoryStore
+
+---
+
 ## 2026-09-05 第十九次对话
 
 **时间：** 2026-09-05

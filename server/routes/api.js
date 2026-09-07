@@ -195,16 +195,19 @@ router.delete('/jobs/:id', requireAdmin, async (req, res) => {
 // 上下架切换（管理员）
 router.patch('/jobs/:id/toggle', requireAdmin, async (req, res) => {
     try {
-        const [rows] = await pool.execute('SELECT is_active FROM jobs WHERE id = ?', [req.params.id]);
+        // 原子操作：直接翻转 is_active，避免并发竞态
+        const [result] = await pool.execute('UPDATE jobs SET is_active = NOT is_active WHERE id = ?', [req.params.id]);
 
-        if (rows.length === 0) {
+        if (result.affectedRows === 0) {
             return res.json({ success: false, message: '招聘信息不存在' });
         }
 
-        const newStatus = !rows[0].is_active;
-        await pool.execute('UPDATE jobs SET is_active = ? WHERE id = ?', [newStatus, req.params.id]);
+        // 查询翻转后的状态
+        const [rows] = await pool.execute('SELECT is_active FROM jobs WHERE id = ?', [req.params.id]);
+        const newStatus = rows[0].is_active;
 
-        await exportJobsData();
+        // 异步导出，不阻塞响应
+        exportJobsData().catch(err => console.error('自动导出失败:', err));
         return res.json({ success: true, message: '状态已切换', data: { is_active: newStatus } });
     } catch (error) {
         console.error('切换失败:', error);

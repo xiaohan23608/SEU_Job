@@ -96,7 +96,7 @@ function renderTable(jobs) {
             <td>
                 <div class="action-btns">
                     <button class="action-btn" onclick="editJob(${job.id})">编辑</button>
-                    <button class="action-btn" onclick="toggleJob(${job.id})">
+                    <button class="action-btn" onclick="toggleJob(${job.id}, this)">
                         ${job.is_active ? '下架' : '上架'}
                     </button>
                     <button class="action-btn action-btn-danger" onclick="deleteJob(${job.id})">删除</button>
@@ -326,7 +326,13 @@ async function saveJob() {
 }
 
 // 切换上下架状态
-async function toggleJob(id) {
+async function toggleJob(id, btn) {
+    if (btn.disabled) return;
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '处理中...';
+    btn.style.opacity = '0.6';
+
     try {
         const res = await fetch(`/api/jobs/${id}/toggle`, { method: 'PATCH' });
         const data = await res.json();
@@ -338,6 +344,12 @@ async function toggleJob(id) {
         }
     } catch (err) {
         console.error('切换失败:', err);
+        alert('操作失败，请重试');
+    } finally {
+        // 恢复按钮（loadJobs 会重新渲染表格，但失败时需要手动恢复）
+        btn.disabled = false;
+        btn.textContent = originalText;
+        btn.style.opacity = '';
     }
 }
 

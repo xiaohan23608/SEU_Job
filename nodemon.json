@@ -1,0 +1,4 @@
+{
+  "ignore": ["data/*", "static/*", "public/uploads/*", "sessions/*"],
+  "delay": "500"
+}
