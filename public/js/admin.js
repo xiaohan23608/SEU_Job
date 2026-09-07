@@ -2,6 +2,15 @@
 let currentPage = 1;
 let editingId = null;
 let imageList = []; // 图片URL数组
+let pendingFiles = []; // 待上传的文件对象数组（与imageList同索引）
+
+// 清空所有待上传文件的本地预览URL，防止内存泄漏
+function clearPendingFiles() {
+    for (const p of pendingFiles) {
+        if (p?.objectUrl) URL.revokeObjectURL(p.objectUrl);
+    }
+    pendingFiles = [];
+}
 
 // 页面加载时获取数据
 document.addEventListener('DOMContentLoaded', () => {
@@ -19,6 +28,7 @@ function setupEventListeners() {
         document.getElementById('modalTitle').textContent = '新增招聘信息';
         document.getElementById('jobForm').reset();
         document.getElementById('jobId').value = '';
+        clearPendingFiles();
         imageList = [];
         renderImageFields();
         document.getElementById('contactImagePreview').innerHTML = '';
@@ -176,70 +186,107 @@ function renderImageFields() {
         container.innerHTML = '<p style="color:#999;font-size:13px;">暂无图片</p>';
         return;
     }
-    container.innerHTML = imageList.map((url, index) => `
+    container.innerHTML = imageList.map((url, index) => {
+        const hasPending = !!pendingFiles[index];
+        const preview = hasPending
+            ? `<img src="${pendingFiles[index].objectUrl}" class="pending-preview">`
+            : (url ? `<img src="${escapeHtml(url)}" onerror="this.style.display='none'">` : '<span style="color:#999;">无预览</span>');
+        const statusTag = hasPending
+            ? '<span class="status-tag pending">待上传</span>'
+            : (url ? '<span class="status-tag uploaded">已上传</span>' : '');
+        return `
         <div class="image-item" data-index="${index}">
-            <div class="image-item-preview">
-                ${url ? `<img src="${escapeHtml(url)}" onerror="this.style.display='none'">` : '<span style="color:#999;">无预览</span>'}
-            </div>
+            <div class="image-item-preview">${preview}</div>
             <div class="image-item-controls">
                 <input type="text" class="image-url-input" value="${escapeHtml(url || '')}" placeholder="输入图片URL" onchange="updateImageUrl(${index}, this.value)">
-                <input type="file" class="image-file-input" accept="image/*" style="display:none;" onchange="uploadImageForIndex(${index}, this)">
+                <input type="file" class="image-file-input" accept="image/*" style="display:none;" onchange="selectFileForIndex(${index}, this)">
                 <button type="button" class="btn btn-small" onclick="this.previousElementSibling.click()">选择</button>
-                <button type="button" class="btn btn-small" onclick="triggerUpload(${index})">上传</button>
+                <button type="button" class="btn btn-small btn-primary" onclick="uploadForIndex(${index})" ${!hasPending ? 'disabled style="opacity:0.5"' : ''}>上传</button>
+                ${statusTag}
                 <button type="button" class="btn btn-small btn-danger" onclick="removeImageField(${index})">删除</button>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 // 添加图片字段
 function addImageField(url) {
     imageList.push(url || '');
+    pendingFiles.push(null);
     renderImageFields();
 }
 
 // 删除图片字段
 function removeImageField(index) {
+    // 释放 objectUrl 防止内存泄漏
+    if (pendingFiles[index]?.objectUrl) {
+        URL.revokeObjectURL(pendingFiles[index].objectUrl);
+    }
     imageList.splice(index, 1);
+    pendingFiles.splice(index, 1);
     renderImageFields();
 }
 
 // 更新图片URL
 function updateImageUrl(index, url) {
     imageList[index] = url;
-    // 更新预览
-    const item = document.querySelector(`.image-item[data-index="${index}"] .image-item-preview`);
-    if (item) {
-        item.innerHTML = url ? `<img src="${escapeHtml(url)}" onerror="this.style.display='none'">` : '<span style="color:#999;">无预览</span>';
+    // 选择URL输入时清除待上传文件
+    if (url && pendingFiles[index]) {
+        URL.revokeObjectURL(pendingFiles[index].objectUrl);
+        pendingFiles[index] = null;
     }
+    renderImageFields();
 }
 
-// 触发指定图片的上传
-function triggerUpload(index) {
-    const fileInput = document.querySelectorAll('.image-file-input')[index];
-    if (fileInput) fileInput.click();
-}
-
-// 上传指定索引的图片
-async function uploadImageForIndex(index, fileInput) {
+// 选择文件（仅预览，不上传）
+function selectFileForIndex(index, fileInput) {
     const file = fileInput.files[0];
     if (!file) return;
 
+    // 释放旧的 objectUrl
+    if (pendingFiles[index]?.objectUrl) {
+        URL.revokeObjectURL(pendingFiles[index].objectUrl);
+    }
+
+    // 存储文件和本地预览URL
+    pendingFiles[index] = {
+        file: file,
+        objectUrl: URL.createObjectURL(file)
+    };
+    // 清空手动输入的URL，以待上传文件为准
+    imageList[index] = '';
+    renderImageFields();
+}
+
+// 上传指定索引的图片
+async function uploadForIndex(index) {
+    const pending = pendingFiles[index];
+    if (!pending) {
+        alert('请先选择要上传的图片');
+        return;
+    }
+
+    const btn = document.querySelectorAll('.image-item')[index]?.querySelector('.btn-primary');
+    if (btn) { btn.disabled = true; btn.textContent = '上传中...'; }
+
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', pending.file);
 
     try {
         const res = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await res.json();
         if (data.success) {
             imageList[index] = data.url;
+            URL.revokeObjectURL(pending.objectUrl);
+            pendingFiles[index] = null;
             renderImageFields();
-            alert('上传成功！');
         } else {
             alert(data.message || '上传失败');
         }
     } catch (err) {
         alert('上传失败：' + err.message);
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '上传'; }
     }
 }
 
@@ -264,7 +311,9 @@ async function editJob(id) {
             document.getElementById('formContactImage').value = job.contact_image || '';
 
             // 解析多图
+            clearPendingFiles();
             imageList = parseImages(job.content_image);
+            pendingFiles = new Array(imageList.length).fill(null);
             renderImageFields();
 
             // 投递联系图片预览
@@ -284,6 +333,29 @@ async function saveJob() {
     document.querySelectorAll('.image-url-input').forEach((input, i) => {
         imageList[i] = input.value;
     });
+
+    // 自动上传所有待上传的图片
+    for (let i = 0; i < pendingFiles.length; i++) {
+        if (pendingFiles[i]) {
+            const formData = new FormData();
+            formData.append('image', pendingFiles[i].file);
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.success) {
+                    imageList[i] = data.url;
+                    URL.revokeObjectURL(pendingFiles[i].objectUrl);
+                    pendingFiles[i] = null;
+                } else {
+                    alert(`第${i + 1}张图片上传失败: ${data.message || '未知错误'}`);
+                    return;
+                }
+            } catch (err) {
+                alert(`第${i + 1}张图片上传失败: ${err.message}`);
+                return;
+            }
+        }
+    }
 
     // 过滤空值
     const images = imageList.filter(url => url && url.trim());

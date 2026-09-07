@@ -5,13 +5,16 @@
 
 ---
 
-## 2026-09-07 第二十次对话
+## 2026-09-07 15:20 第二十次对话
 
-**时间：** 2026-09-07
+**时间：** 2026-09-07 15:20
 
 **用户输入：**
 > 我现在不能连续进行招聘信息的上架和下架操作
 > 还是无权限
+> 第二次"下架"按钮时弹出"无权限"的提示框
+> 新建招聘信息的时候，选择图片和点击上传都回到我本地选择图片并上传，这是不是有重复
+> 我想要的是点击选择可以选图片，点击上传才真正上传图片，而且要避免在这过程中进行重复的文件复制等
 
 **AI 执行动作：**
 1. 问题调查：
@@ -46,11 +49,23 @@
    - 服务器日志还显示 `Unknown column 'hr_contact' in 'field list'`
    - 执行 `ALTER TABLE jobs ADD COLUMN hr_contact VARCHAR(200), ADD COLUMN contact_image TEXT`
 
+7. 图片上传 UX 优化：
+   - 原问题："选择"和"上传"两个按钮都直接打开文件选择器并上传，功能重复
+   - 重新设计为两步操作：
+     - "选择"按钮：打开文件选择器，仅本地预览（`URL.createObjectURL`），不上传
+     - "上传"按钮：将已选文件发送到服务器，未选文件时按钮置灰
+   - 新增 `pendingFiles` 数组存储待上传的 File 对象
+   - 每张图片显示状态标签：`待上传`（黄色）或 `已上传`（绿色）
+   - 保存时自动上传所有待上传图片，避免数据丢失
+   - 删除图片或重新选择时调用 `URL.revokeObjectURL` 释放内存
+   - 手动输入 URL 时自动清除待上传文件
+
 **产出文件：**
 - `nodemon.json`（新增：忽略导出目录，防止 nodemon 误重启）
 - `server/routes/api.js`（更新：原子 toggle + 异步导出）
-- `public/js/admin.js`（更新：按钮禁用/加载态）
+- `public/js/admin.js`（更新：按钮禁用/加载态 + 图片两步上传）
 - `views/admin.ejs`（更新：toggle 按钮传入 this）
+- `public/css/style.css`（更新：`.status-tag`、`.pending-preview` 样式）
 
 **问题根因：**
 `exportJobsData()` 在每次 toggle 后写入 `data/` 和 `static/` 目录的文件，nodemon 默认监听所有文件变化并重启服务器，导致内存中的 session 丢失。
@@ -58,6 +73,7 @@
 **经验总结：**
 - 使用 nodemon 开发时，对于会自动写入文件的功能（如数据导出），必须在 `nodemon.json` 中排除相关目录
 - 生产环境应使用数据库或 Redis 存储 session，而非默认的内存 MemoryStore
+- 文件上传 UX 应分"选择预览"和"确认上传"两步，避免用户误操作
 
 ---
 
