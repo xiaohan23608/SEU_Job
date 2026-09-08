@@ -1,7 +1,7 @@
 {
   "name": "seu-job",
   "version": "1.0.0",
-  "description": "东南大学招聘信息展示系统",
+  "description": "东南大学计软智学院招聘信息展示系统",
   "main": "server/app.js",
   "scripts": {
     "start": "node server/app.js",

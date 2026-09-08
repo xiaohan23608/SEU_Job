@@ -1,4 +1,4 @@
--- 东南大学招聘信息系统 - 数据库初始化脚本
+-- 东南大学计软智学院招聘信息系统 - 数据库初始化脚本
 
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS seu_job DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
