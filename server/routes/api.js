@@ -32,7 +32,7 @@ async function exportJobsData() {
     }
 }
 
-// 图片上传配置
+// 通用上传配置
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'public/uploads/');
@@ -43,7 +43,8 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({
+// 图片上传
+const imageUpload = multer({
     storage: storage,
     limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
     fileFilter: function (req, file, cb) {
@@ -54,6 +55,21 @@ const upload = multer({
             return cb(null, true);
         }
         cb(new Error('只允许上传图片文件（jpg/png/gif/webp）'));
+    }
+});
+
+// 文档上传
+const documentUpload = multer({
+    storage: storage,
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+    fileFilter: function (req, file, cb) {
+        const filetypes = /pdf|doc|docx/;
+        const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = /application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document/.test(file.mimetype);
+        if (extname && mimetype) {
+            return cb(null, true);
+        }
+        cb(new Error('只允许上传文档文件（pdf/doc/docx）'));
     }
 });
 
@@ -130,7 +146,7 @@ router.get('/jobs/:id', async (req, res) => {
 
 // 新增招聘信息（管理员）
 router.post('/jobs', requireAdmin, async (req, res) => {
-    const { title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image } = req.body;
+    const { title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, attachment } = req.body;
 
     if (!title) {
         return res.json({ success: false, message: '标题为必填项' });
@@ -138,9 +154,9 @@ router.post('/jobs', requireAdmin, async (req, res) => {
 
     try {
         const [result] = await pool.execute(
-            `INSERT INTO jobs (title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, original_time)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [title, company || '', summary || '', content_text || null, content_image || null, content_link || null, tags || null, hr_contact || null, contact_image || null]
+            `INSERT INTO jobs (title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, attachment, original_time)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            [title, company || '', summary || '', content_text || null, content_image || null, content_link || null, tags || null, hr_contact || null, contact_image || null, attachment || null]
         );
 
         await exportJobsData();
@@ -153,14 +169,14 @@ router.post('/jobs', requireAdmin, async (req, res) => {
 
 // 编辑招聘信息（管理员）
 router.put('/jobs/:id', requireAdmin, async (req, res) => {
-    const { title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image } = req.body;
+    const { title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, attachment } = req.body;
 
     try {
         const [result] = await pool.execute(
             `UPDATE jobs SET title = ?, company = ?, summary = ?,
-             content_text = ?, content_image = ?, content_link = ?, tags = ?, hr_contact = ?, contact_image = ?
+             content_text = ?, content_image = ?, content_link = ?, tags = ?, hr_contact = ?, contact_image = ?, attachment = ?
              WHERE id = ?`,
-            [title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, req.params.id]
+            [title, company, summary, content_text, content_image, content_link, tags, hr_contact, contact_image, attachment, req.params.id]
         );
 
         if (result.affectedRows === 0) {
@@ -216,7 +232,7 @@ router.patch('/jobs/:id/toggle', requireAdmin, async (req, res) => {
 });
 
 // 图片上传（管理员）
-router.post('/upload', requireAdmin, upload.single('image'), (req, res) => {
+router.post('/upload', requireAdmin, imageUpload.single('image'), (req, res) => {
     if (!req.file) {
         return res.json({ success: false, message: '请选择文件' });
     }
@@ -229,6 +245,29 @@ router.post('/upload', requireAdmin, upload.single('image'), (req, res) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
             return res.json({ success: false, message: '文件大小不能超过50MB' });
+        }
+        return res.json({ success: false, message: error.message });
+    }
+    if (error) {
+        return res.json({ success: false, message: error.message });
+    }
+});
+
+// 文档上传（管理员）
+router.post('/upload-document', requireAdmin, documentUpload.single('document'), (req, res) => {
+    if (!req.file) {
+        return res.json({ success: false, message: '请选择文件' });
+    }
+    res.json({
+        success: true,
+        message: '上传成功',
+        url: '/uploads/' + req.file.filename,
+        filename: req.file.originalname
+    });
+}, (error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.json({ success: false, message: '文件大小不能超过20MB' });
         }
         return res.json({ success: false, message: error.message });
     }

@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadJobs();
     setupEventListeners();
     setupContactImageUpload();
+    setupAttachmentUpload();
     document.getElementById('addImageBtn').addEventListener('click', () => addImageField(''));
 });
 
@@ -32,6 +33,7 @@ function setupEventListeners() {
         imageList = [];
         renderImageFields();
         clearContactImage();
+        clearAttachment();
         showModal();
     });
 
@@ -162,6 +164,7 @@ function getContentIndicators(job) {
     if (job.content_link) indicators.push('🔗');
     if (job.hr_contact) indicators.push('📞');
     if (job.contact_image) indicators.push('📩');
+    if (job.attachment) indicators.push('📎');
     return indicators.join(' ') || '-';
 }
 
@@ -328,6 +331,27 @@ async function editJob(id) {
                 document.getElementById('contactImageStatus').className = 'status-tag';
             }
 
+            // 附件预览
+            if (job.attachment) {
+                document.getElementById('attachmentItem').style.display = 'flex';
+                document.getElementById('addAttachmentBtn').style.display = 'none';
+                document.getElementById('formAttachment').value = job.attachment;
+                // 从URL中提取文件名
+                const filename = job.attachment.split('/').pop();
+                document.getElementById('attachmentLink').href = job.attachment;
+                document.getElementById('attachmentLink').textContent = filename || '查看附件';
+                document.getElementById('attachmentStatus').textContent = '已上传';
+                document.getElementById('attachmentStatus').className = 'status-tag uploaded';
+            } else {
+                document.getElementById('attachmentItem').style.display = 'none';
+                document.getElementById('addAttachmentBtn').style.display = 'inline-flex';
+                document.getElementById('formAttachment').value = '';
+                document.getElementById('attachmentLink').href = '#';
+                document.getElementById('attachmentLink').textContent = '查看附件';
+                document.getElementById('attachmentStatus').textContent = '';
+                document.getElementById('attachmentStatus').className = 'status-tag';
+            }
+
             showModal();
         }
     } catch (err) {
@@ -386,6 +410,26 @@ async function saveJob() {
         }
     }
 
+    // 自动上传附件
+    if (attachmentPending) {
+        const formData = new FormData();
+        formData.append('document', attachmentPending.file);
+        try {
+            const res = await fetch('/api/upload-document', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('formAttachment').value = data.url;
+                attachmentPending = null;
+            } else {
+                alert(`附件上传失败: ${data.message || '未知错误'}`);
+                return;
+            }
+        } catch (err) {
+            alert(`附件上传失败: ${err.message}`);
+            return;
+        }
+    }
+
     // 过滤空值
     const images = imageList.filter(url => url && url.trim());
 
@@ -398,7 +442,8 @@ async function saveJob() {
         content_link: document.getElementById('formLink').value || null,
         tags: document.getElementById('formTags').value || null,
         hr_contact: document.getElementById('formHrContact').value || null,
-        contact_image: document.getElementById('formContactImage').value || null
+        contact_image: document.getElementById('formContactImage').value || null,
+        attachment: document.getElementById('formAttachment').value || null
     };
 
     try {
@@ -482,6 +527,9 @@ function escapeHtml(text) {
 
 // 投递联系图片相关变量
 let contactImagePending = null; // 待上传的文件对象
+
+// 附件相关变量
+let attachmentPending = null; // 待上传的文件对象
 
 // 添加投递联系图片
 function addContactImage() {
@@ -587,6 +635,84 @@ function setupContactImageUpload() {
             document.getElementById('contactImagePreview').innerHTML = '';
             document.getElementById('contactImageStatus').textContent = '';
             document.getElementById('contactImageStatus').className = 'status-tag';
+        }
+    });
+}
+
+// 添加附件
+function addAttachment() {
+    document.getElementById('attachmentItem').style.display = 'flex';
+    document.getElementById('addAttachmentBtn').style.display = 'none';
+}
+
+// 清除附件
+function clearAttachment() {
+    attachmentPending = null;
+    document.getElementById('formAttachment').value = '';
+    document.getElementById('attachmentFile').value = '';
+    document.getElementById('attachmentLink').href = '#';
+    document.getElementById('attachmentLink').textContent = '查看附件';
+    document.getElementById('attachmentStatus').textContent = '';
+    document.getElementById('attachmentStatus').className = 'status-tag';
+    document.getElementById('uploadAttachmentBtn').disabled = true;
+    document.getElementById('uploadAttachmentBtn').style.opacity = '0.5';
+    document.getElementById('attachmentItem').style.display = 'none';
+    document.getElementById('addAttachmentBtn').style.display = 'inline-flex';
+}
+
+// 设置附件上传
+function setupAttachmentUpload() {
+    const fileInput = document.getElementById('attachmentFile');
+    const uploadBtn = document.getElementById('uploadAttachmentBtn');
+    const attachmentInput = document.getElementById('formAttachment');
+
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (file) {
+            attachmentPending = { file: file };
+
+            document.getElementById('attachmentLink').textContent = file.name;
+            document.getElementById('attachmentLink').href = '#';
+            document.getElementById('attachmentStatus').textContent = '待上传';
+            document.getElementById('attachmentStatus').className = 'status-tag pending';
+            document.getElementById('uploadAttachmentBtn').disabled = false;
+            document.getElementById('uploadAttachmentBtn').style.opacity = '1';
+        }
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+        if (!attachmentPending) {
+            alert('请先选择要上传的文件');
+            return;
+        }
+
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '上传中...';
+
+        const formData = new FormData();
+        formData.append('document', attachmentPending.file);
+
+        try {
+            const res = await fetch('/api/upload-document', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                attachmentInput.value = data.url;
+                document.getElementById('attachmentLink').href = data.url;
+                document.getElementById('attachmentLink').textContent = data.filename || '查看附件';
+                document.getElementById('attachmentStatus').textContent = '已上传';
+                document.getElementById('attachmentStatus').className = 'status-tag uploaded';
+                document.getElementById('uploadAttachmentBtn').disabled = true;
+                document.getElementById('uploadAttachmentBtn').style.opacity = '0.5';
+                attachmentPending = null;
+                fileInput.value = '';
+            } else {
+                alert(data.message || '上传失败');
+            }
+        } catch (err) {
+            alert('上传失败：' + err.message);
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '上传';
         }
     });
 }

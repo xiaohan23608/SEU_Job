@@ -142,6 +142,7 @@ function showDetail(id) {
             ${job.content_link ? `<div class="detail-content-link"><p>推送链接：</p><a href="${escapeHtml(job.content_link)}" target="_blank" rel="noopener noreferrer">点击查看</a></div>` : ''}
             ${job.hr_contact ? `<div class="detail-hr-contact"><p>📞 HR联系方式：${escapeHtml(job.hr_contact)}</p></div>` : ''}
             ${job.contact_image ? `<div class="detail-content-image"><img src="${escapeHtml(fixImagePath(job.contact_image))}" alt="投递联系图片"></div>` : ''}
+            ${job.attachment ? `<div class="detail-attachment"><p>📎 附件下载：</p><a href="${escapeHtml(fixImagePath(job.attachment))}" target="_blank" class="btn btn-primary">📄 下载附件</a></div>` : ''}
         </div>
         ${job.tags ? `<div class="detail-tags">${job.tags.split(',').map(tag => `<span class="tag">${escapeHtml(tag.trim())}</span>`).join('')}</div>` : ''}
     `;
@@ -164,6 +165,7 @@ function getContentIndicators(job) {
     if (job.content_link) indicators.push('🔗');
     if (job.hr_contact) indicators.push('📞');
     if (job.contact_image) indicators.push('📩');
+    if (job.attachment) indicators.push('📎');
     return indicators.join(' ');
 }
 
