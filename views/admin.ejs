@@ -86,13 +86,18 @@
                 </div>
                 <div class="form-group">
                     <label>📩 投递联系图片</label>
-                    <div class="image-upload-group">
-                        <input type="text" id="formContactImage" placeholder="输入投递相关联系图片URL">
-                        <input type="file" id="contactImageFile" accept="image/*" style="display:none;">
-                        <button type="button" class="btn btn-small" onclick="document.getElementById('contactImageFile').click()">选择文件</button>
-                        <button type="button" class="btn btn-small" id="uploadContactImageBtn">上传</button>
+                    <div id="contactImageItem" class="image-item" style="display:none;">
+                        <div class="image-item-preview" id="contactImagePreview"></div>
+                        <div class="image-item-controls">
+                            <input type="text" class="image-url-input" id="formContactImage" placeholder="输入投递相关联系图片URL">
+                            <input type="file" id="contactImageFile" accept="image/*" style="display:none;">
+                            <button type="button" class="btn btn-small" onclick="document.getElementById('contactImageFile').click()">选择</button>
+                            <button type="button" class="btn btn-small btn-primary" id="uploadContactImageBtn" disabled style="opacity:0.5">上传</button>
+                            <span id="contactImageStatus" class="status-tag"></span>
+                            <button type="button" class="btn btn-small btn-danger" onclick="clearContactImage()">删除</button>
+                        </div>
                     </div>
-                    <div id="contactImagePreview" style="margin-top:8px;"></div>
+                    <button type="button" class="btn btn-small" id="addContactImageBtn" onclick="addContactImage()" style="margin-top:8px;">+ 添加投递联系图片</button>
                 </div>
                 <div class="form-group">
                     <label>标签（逗号分隔）</label>

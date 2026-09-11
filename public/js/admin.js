@@ -31,7 +31,7 @@ function setupEventListeners() {
         clearPendingFiles();
         imageList = [];
         renderImageFields();
-        document.getElementById('contactImagePreview').innerHTML = '';
+        clearContactImage();
         showModal();
     });
 
@@ -314,8 +314,19 @@ async function editJob(id) {
             renderImageFields();
 
             // 投递联系图片预览
-            const contactPreview = document.getElementById('contactImagePreview');
-            contactPreview.innerHTML = job.contact_image ? `<img src="${escapeHtml(job.contact_image)}" style="max-width:200px;max-height:150px;border-radius:4px;" onerror="this.style.display='none'">` : '';
+            if (job.contact_image) {
+                document.getElementById('contactImageItem').style.display = 'flex';
+                document.getElementById('addContactImageBtn').style.display = 'none';
+                document.getElementById('contactImagePreview').innerHTML = `<img src="${escapeHtml(job.contact_image)}" onerror="this.style.display='none'">`;
+                document.getElementById('contactImageStatus').textContent = '已上传';
+                document.getElementById('contactImageStatus').className = 'status-tag uploaded';
+            } else {
+                document.getElementById('contactImageItem').style.display = 'none';
+                document.getElementById('addContactImageBtn').style.display = 'inline-flex';
+                document.getElementById('contactImagePreview').innerHTML = '';
+                document.getElementById('contactImageStatus').textContent = '';
+                document.getElementById('contactImageStatus').className = 'status-tag';
+            }
 
             showModal();
         }
@@ -351,6 +362,27 @@ async function saveJob() {
                 alert(`第${i + 1}张图片上传失败: ${err.message}`);
                 return;
             }
+        }
+    }
+
+    // 自动上传投递联系图片
+    if (contactImagePending) {
+        const formData = new FormData();
+        formData.append('image', contactImagePending.file);
+        try {
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('formContactImage').value = data.url;
+                URL.revokeObjectURL(contactImagePending.objectUrl);
+                contactImagePending = null;
+            } else {
+                alert(`投递联系图片上传失败: ${data.message || '未知错误'}`);
+                return;
+            }
+        } catch (err) {
+            alert(`投递联系图片上传失败: ${err.message}`);
+            return;
         }
     }
 
@@ -448,6 +480,32 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// 投递联系图片相关变量
+let contactImagePending = null; // 待上传的文件对象
+
+// 添加投递联系图片
+function addContactImage() {
+    document.getElementById('contactImageItem').style.display = 'flex';
+    document.getElementById('addContactImageBtn').style.display = 'none';
+}
+
+// 清除投递联系图片
+function clearContactImage() {
+    if (contactImagePending?.objectUrl) {
+        URL.revokeObjectURL(contactImagePending.objectUrl);
+    }
+    contactImagePending = null;
+    document.getElementById('formContactImage').value = '';
+    document.getElementById('contactImageFile').value = '';
+    document.getElementById('contactImagePreview').innerHTML = '';
+    document.getElementById('contactImageStatus').textContent = '';
+    document.getElementById('contactImageStatus').className = 'status-tag';
+    document.getElementById('uploadContactImageBtn').disabled = true;
+    document.getElementById('uploadContactImageBtn').style.opacity = '0.5';
+    document.getElementById('contactImageItem').style.display = 'none';
+    document.getElementById('addContactImageBtn').style.display = 'inline-flex';
+}
+
 // 设置投递联系图片上传
 function setupContactImageUpload() {
     const fileInput = document.getElementById('contactImageFile');
@@ -457,37 +515,54 @@ function setupContactImageUpload() {
     fileInput.addEventListener('change', () => {
         const file = fileInput.files[0];
         if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('contactImagePreview').innerHTML =
-                    `<img src="${e.target.result}" style="max-width:200px;max-height:150px;border-radius:4px;">`;
+            // 释放旧的 objectUrl
+            if (contactImagePending?.objectUrl) {
+                URL.revokeObjectURL(contactImagePending.objectUrl);
+            }
+
+            // 存储文件和本地预览URL
+            contactImagePending = {
+                file: file,
+                objectUrl: URL.createObjectURL(file)
             };
-            reader.readAsDataURL(file);
+
+            document.getElementById('contactImagePreview').innerHTML =
+                `<img src="${contactImagePending.objectUrl}" class="pending-preview">`;
+            document.getElementById('contactImageStatus').textContent = '待上传';
+            document.getElementById('contactImageStatus').className = 'status-tag pending';
+            document.getElementById('uploadContactImageBtn').disabled = false;
+            document.getElementById('uploadContactImageBtn').style.opacity = '1';
+            // 清空手动输入的URL，以待上传文件为准
+            contactImageInput.value = '';
         }
     });
 
     uploadBtn.addEventListener('click', async () => {
-        const file = fileInput.files[0];
-        if (!file) {
-            alert('请先选择文件');
+        if (!contactImagePending) {
+            alert('请先选择要上传的图片');
             return;
         }
 
-        const formData = new FormData();
-        formData.append('image', file);
-
         uploadBtn.disabled = true;
         uploadBtn.textContent = '上传中...';
+
+        const formData = new FormData();
+        formData.append('image', contactImagePending.file);
 
         try {
             const res = await fetch('/api/upload', { method: 'POST', body: formData });
             const data = await res.json();
             if (data.success) {
                 contactImageInput.value = data.url;
+                URL.revokeObjectURL(contactImagePending.objectUrl);
+                contactImagePending = null;
                 document.getElementById('contactImagePreview').innerHTML =
-                    `<img src="${data.url}" style="max-width:200px;max-height:150px;border-radius:4px;">`;
+                    `<img src="${data.url}">`;
+                document.getElementById('contactImageStatus').textContent = '已上传';
+                document.getElementById('contactImageStatus').className = 'status-tag uploaded';
+                document.getElementById('uploadContactImageBtn').disabled = true;
+                document.getElementById('uploadContactImageBtn').style.opacity = '0.5';
                 fileInput.value = '';
-                alert('上传成功！');
             } else {
                 alert(data.message || '上传失败');
             }
@@ -503,9 +578,15 @@ function setupContactImageUpload() {
         const url = contactImageInput.value;
         if (url) {
             document.getElementById('contactImagePreview').innerHTML =
-                `<img src="${url}" style="max-width:200px;max-height:150px;border-radius:4px;" onerror="this.style.display='none'">`;
+                `<img src="${url}" onerror="this.style.display='none'">`;
+            document.getElementById('contactImageStatus').textContent = '已上传';
+            document.getElementById('contactImageStatus').className = 'status-tag uploaded';
+            document.getElementById('contactImageItem').style.display = 'flex';
+            document.getElementById('addContactImageBtn').style.display = 'none';
         } else {
             document.getElementById('contactImagePreview').innerHTML = '';
+            document.getElementById('contactImageStatus').textContent = '';
+            document.getElementById('contactImageStatus').className = 'status-tag';
         }
     });
 }
